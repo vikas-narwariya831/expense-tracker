@@ -3,33 +3,33 @@ import {
   StyleSheet,
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  Dimensions,
+  ScrollView,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { 
   CreditCard, 
   ArrowUpRight, 
   ArrowDownLeft, 
-  ShoppingBag, 
-  Utensils, 
-  Zap, 
-  MoreHorizontal,
-  Bell,
-  RefreshCw,
-  Plus
+  Plus,
+  Inbox,
+  ArrowRightLeft
 } from 'lucide-react-native';
-import { useSmsTracker } from '../../hooks/useSmsTracker';
-import { Transaction } from '../../lib/parser';
-
-const { width } = Dimensions.get('window');
+import { useRouter } from 'expo-router';
+import { useTransactions } from '../../context/TransactionContext';
+import { useLedger } from '../../context/LedgerContext';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import AnimatedCard from '../../components/AnimatedCard';
+import TransactionList from '../../components/TransactionList';
 
 export default function DashboardScreen() {
-  const { transactions, loading, mockSms } = useSmsTracker();
+  const router = useRouter();
+  const { transactions } = useTransactions();
+  const { customers } = useLedger();
   const [activeTab, setActiveTab] = useState('All');
 
   const totalExpense = transactions
@@ -42,144 +42,151 @@ export default function DashboardScreen() {
 
   const balance = totalIncome - totalExpense;
 
+  const netGet = customers.reduce((sum, c) => c.netBalance > 0 ? sum + c.netBalance : sum, 0);
+  const netGive = customers.reduce((sum, c) => c.netBalance < 0 ? sum + Math.abs(c.netBalance) : sum, 0);
+
   const filteredTransactions = activeTab === 'All' 
     ? transactions 
     : transactions.filter(t => t.type === (activeTab === 'Expense' ? 'expense' : 'income'));
-
-  const renderTransactionItem = ({ item }: { item: Transaction }) => {
-    const isExpense = item.type === 'expense';
-    
-    // Choose icon based on merchant name
-    const getIcon = (merchant: string) => {
-      const name = merchant.toLowerCase();
-      if (name.includes('zomato') || name.includes('swiggy') || name.includes('restaurant')) return <Utensils size={20} color="#FF6B6B" />;
-      if (name.includes('amazon') || name.includes('flipkart') || name.includes('store')) return <ShoppingBag size={20} color="#4D96FF" />;
-      if (name.includes('bill') || name.includes('jio') || name.includes('electricity')) return <Zap size={20} color="#FFD93D" />;
-      return isExpense ? <ArrowUpRight size={20} color="#FF6B6B" /> : <ArrowDownLeft size={20} color="#6BCB77" />;
-    };
-
-    return (
-      <View style={styles.transactionItem}>
-        <View style={[styles.iconContainer, { backgroundColor: isExpense ? '#FFF5F5' : '#F2FFF5' }]}>
-          {getIcon(item.merchant)}
-        </View>
-        <View style={styles.transactionInfo}>
-          <Text style={styles.merchantName} numberOfLines={1}>{item.merchant}</Text>
-          <Text style={styles.transactionDate}>{new Date(item.date).toLocaleDateString()} • {new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
-        </View>
-        <View style={styles.amountContainer}>
-          <Text style={[styles.amountText, { color: isExpense ? '#E63946' : '#2A9D8F' }]}>
-            {isExpense ? '-' : '+'}₹{item.amount.toLocaleString()}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
-  const testSms = () => {
-    const samples = [
-      "Rs.500.00 debited from A/c XXXX via UPI to Zomato on 08-Apr-26.",
-      "INR 1200 debited at Amazon Store on 08-Apr-26. Ref: 12345",
-      "Your A/c XXXX is credited with Rs.15000.00 on 08-Apr-26 by Salary.",
-      "Paid Rs. 250 to StarBucks via PhonePe."
-    ];
-    const randomSms = samples[Math.floor(Math.random() * samples.length)];
-    mockSms(randomSms);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Hello, User</Text>
-          <Text style={styles.subHeaderText}>Your smart wallet is ready</Text>
-        </View>
-        <TouchableOpacity style={styles.bellButton} onPress={testSms} activeOpacity={0.7}>
-          <Plus size={24} color="#1A1A1A" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Balance Card */}
-      <View style={styles.cardWrapper}>
-        <LinearGradient
-          colors={['#1A1A1A', '#333333']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.balanceCard}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>Current Balance</Text>
-            <CreditCard size={20} color="rgba(255,255,255,0.6)" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+          <View>
+            <Text style={styles.welcomeText}>Wallet Overview</Text>
+            <Text style={styles.subHeaderText}>Smart tracking active</Text>
           </View>
-          <Text style={styles.balanceAmount}>₹{balance.toLocaleString()}</Text>
-          
-          <View style={styles.cardFooter}>
-            <View style={styles.statsItem}>
-              <View style={[styles.statsIcon, { backgroundColor: 'rgba(107, 203, 119, 0.2)' }]}>
-                <ArrowDownLeft size={14} color="#6BCB77" />
-              </View>
-              <View>
-                <Text style={styles.statsLabel}>Income</Text>
-                <Text style={styles.incomeAmount}>₹{totalIncome.toLocaleString()}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.statsItem}>
-              <View style={[styles.statsIcon, { backgroundColor: 'rgba(255, 107, 107, 0.2)' }]}>
-                <ArrowUpRight size={14} color="#FF6B6B" />
-              </View>
-              <View>
-                <Text style={styles.statsLabel}>Expenses</Text>
-                <Text style={styles.expenseAmount}>₹{totalExpense.toLocaleString()}</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        {['All', 'Income', 'Expense'].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && styles.activeTab]}
+          <TouchableOpacity 
+            style={styles.addButton} 
+            onPress={() => router.push('/add-expense')}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
+            <LinearGradient
+              colors={['#6366F1', '#4F46E5']}
+              style={styles.addBtnGradient}
+            >
+              <Plus size={24} color="#FFF" />
+            </LinearGradient>
           </TouchableOpacity>
-        ))}
-      </View>
+        </Animated.View>
 
-      {/* Transactions List */}
-      <View style={styles.listHeader}>
-        <Text style={styles.listTitle}>Recent Activity</Text>
-        <TouchableOpacity>
-          <Text style={styles.seeAll}>See All</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Glassmorphism Balance Card */}
+        <Animated.View entering={FadeInUp.delay(200).duration(800)}>
+          <View style={styles.glassCardContainer}>
+            <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill} />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.7)', 'rgba(255,255,255,0.3)']}
+              style={styles.glassGradient}
+            >
+              <View style={styles.cardInfo}>
+                <View>
+                  <Text style={styles.cardLabel}>Total Balance</Text>
+                  <Text style={styles.balanceAmount}>₹{balance.toLocaleString()}</Text>
+                </View>
+                <View style={styles.cardIcon}>
+                  <CreditCard size={24} color="#6366F1" opacity={0.6} />
+                </View>
+              </View>
+              
+              <View style={styles.cardStats}>
+                <View style={styles.statItem}>
+                  <View style={[styles.statIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                    <ArrowDownLeft size={16} color="#10b981" />
+                  </View>
+                  <View>
+                    <Text style={styles.statLabel}>Income</Text>
+                    <Text style={styles.statValue}>₹{totalIncome.toLocaleString()}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.divider} />
+                
+                <View style={styles.statItem}>
+                  <View style={[styles.statIconBox, { backgroundColor: 'rgba(244, 63, 94, 0.1)' }]}>
+                    <ArrowUpRight size={16} color="#f43f5e" />
+                  </View>
+                  <View>
+                    <Text style={styles.statLabel}>Expenses</Text>
+                    <Text style={styles.statValue}>₹{totalExpense.toLocaleString()}</Text>
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
+          </View>
+        </Animated.View>
 
-      <FlatList
-        data={filteredTransactions}
-        renderItem={renderTransactionItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconCircle}>
-              <RefreshCw size={40} color="#E0E0E0" />
-            </View>
-            <Text style={styles.emptyTitle}>No transactions tracked yet</Text>
-            <Text style={styles.emptySubtitle}>Your bank SMS notifications will automatically appear here.</Text>
-            <TouchableOpacity style={styles.testButton} onPress={testSms}>
-              <Text style={styles.testButtonText}>Test with Sample SMS</Text>
+        {/* Ledger Summary Section */}
+        <Animated.View entering={FadeInUp.delay(300).duration(800)} style={styles.ledgerSection}>
+          <Text style={styles.sectionTitle}>Business Ledger</Text>
+          <View style={styles.ledgerCards}>
+            <TouchableOpacity 
+              style={styles.ledgerCard} 
+              onPress={() => router.push('/ledger')}
+            >
+              <View style={[styles.ledgerIconBox, { backgroundColor: '#FEE2E2' }]}>
+                <ArrowDownLeft size={18} color="#EF4444" />
+              </View>
+              <Text style={styles.ledgerLabel}>You&apos;ll Get</Text>
+              <Text style={[styles.ledgerAmount, { color: '#EF4444' }]}>₹{netGet.toLocaleString()}</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.ledgerCard} 
+              onPress={() => router.push('/ledger')}
+            >
+              <View style={[styles.ledgerIconBox, { backgroundColor: '#DCFCE7' }]}>
+                <ArrowUpRight size={18} color="#10B981" />
+              </View>
+              <Text style={styles.ledgerLabel}>You&apos;ll Give</Text>
+              <Text style={[styles.ledgerAmount, { color: '#10B981' }]}>₹{netGive.toLocaleString()}</Text>
             </TouchableOpacity>
           </View>
-        }
-      />
+        </Animated.View>
+
+        {/* Quick Actions / Tabs */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles.tabContainer}>
+            {['All', 'Income', 'Expense'].map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={[styles.tab, activeTab === tab && styles.activeTab]}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Transactions List */}
+        <Animated.View entering={FadeInUp.delay(400).duration(800)}>
+          {filteredTransactions.length > 0 ? (
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} />
+          ) : (
+            <View style={styles.emptyActivity}>
+              <Inbox size={40} color="#CBD5E1" />
+              <Text style={styles.emptyText}>No activity found</Text>
+            </View>
+          )}
+        </Animated.View>
+
+        <AnimatedCard delay={600} style={styles.analyticsCard}>
+          <View style={styles.analyticsHeader}>
+            <View style={styles.analyticsIcon}>
+              <ArrowRightLeft size={20} color="#6366f1" />
+            </View>
+            <TouchableOpacity onPress={() => router.push('/ledger')}>
+              <Text style={styles.analyticsTitle}>Manage Udhaar</Text>
+              <Text style={styles.analyticsSubtitle}>Total customers: {customers.length}</Text>
+            </TouchableOpacity>
+          </View>
+        </AnimatedCard>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -187,230 +194,238 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F3F4F6',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 130,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 10,
+    marginBottom: 24,
   },
   welcomeText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1E293B',
+    letterSpacing: -0.5,
   },
   subHeaderText: {
-    fontSize: 14,
-    color: '#95A5A6',
+    fontSize: 15,
+    color: '#64748B',
     marginTop: 2,
   },
-  bellButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  cardWrapper: {
-    paddingHorizontal: 20,
-    marginVertical: 20,
-  },
-  balanceCard: {
-    borderRadius: 28,
-    padding: 24,
-    height: 190,
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  balanceAmount: {
-    color: '#FFFFFF',
-    fontSize: 36,
-    fontWeight: '700',
-    letterSpacing: -1,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    paddingTop: 16,
-  },
-  statsItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statsIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  statsLabel: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  incomeAmount: {
-    color: '#6BCB77',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  expenseAmount: {
-    color: '#FF6B6B',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginRight: 10,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  activeTab: {
-    backgroundColor: '#1A1A1A',
-    borderColor: '#1A1A1A',
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#95A5A6',
-  },
-  activeTabText: {
-    color: '#FFFFFF',
-  },
-  listHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 12,
-  },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  seeAll: {
-    fontSize: 14,
-    color: '#4D96FF',
-    fontWeight: '600',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  transactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 5,
-    elevation: 1,
-  },
-  iconContainer: {
+  addButton: {
     width: 48,
     height: 48,
     borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  addBtnGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  glassCardContainer: {
+    borderRadius: 32,
+    marginBottom: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 5,
+  },
+  glassGradient: {
+    padding: 28,
+  },
+  cardInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+  },
+  cardLabel: {
+    color: '#64748B',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  balanceAmount: {
+    color: '#1E293B',
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  cardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 24,
+    padding: 16,
+  },
+  statItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statLabel: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statValue: {
+    color: '#1E293B',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    marginHorizontal: 10,
+  },
+  ledgerSection: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 16,
+  },
+  ledgerCards: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  ledgerCard: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  ledgerIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  ledgerLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  ledgerAmount: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  activeTabText: {
+    color: '#1E293B',
+  },
+  emptyActivity: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  emptyText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    marginTop: 12,
+    fontWeight: '500',
+  },
+  analyticsCard: {
+    marginTop: 20,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  analyticsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  analyticsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
-  transactionInfo: {
-    flex: 1,
-  },
-  merchantName: {
+  analyticsTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: '700',
+    color: '#1E293B',
   },
-  transactionDate: {
-    fontSize: 12,
-    color: '#95A5A6',
+  analyticsSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
     marginTop: 2,
   },
-  amountContainer: {
-    alignItems: 'flex-end',
-  },
-  amountText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 60,
-    paddingHorizontal: 40,
-  },
-  emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#95A5A6',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  testButton: {
-    marginTop: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    backgroundColor: '#1A1A1A',
-  },
-  testButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-  }
 });

@@ -10,6 +10,7 @@ export interface Transaction {
   type: 'expense' | 'income';
   date: string;
   rawSms: string;
+  category?: string;
 }
 
 export const parseSms = (body: string): Transaction | null => {

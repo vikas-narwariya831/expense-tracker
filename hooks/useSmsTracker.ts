@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
-import { parseSms, Transaction } from '../lib/parser';
-import { getTransactions, saveTransaction } from '../lib/storage';
+import { parseSms } from '../lib/parser';
+import { useTransactions } from '../context/TransactionContext';
 
 // Conditional import for the native module
 let SmsListener: any = null;
@@ -14,44 +14,32 @@ if (Platform.OS === 'android') {
 }
 
 export const useSmsTracker = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { transactions, isLoading: loading, addTransaction } = useTransactions();
 
   useEffect(() => {
-    // Initial fetch
-    getTransactions().then((data) => {
-      setTransactions(data);
-      setLoading(false);
-    });
-
     if (Platform.OS !== 'android' || !SmsListener) {
-      console.log('Sms Tracking is only available on Android.');
       return;
     }
 
-    const subscription = SmsListener.addListener((message: any) => {
+    const subscription = SmsListener.addListener(async (message: any) => {
       console.log('Incoming SMS:', message.body);
       const transaction = parseSms(message.body);
       
       if (transaction) {
-        saveTransaction(transaction).then(updatedList => {
-          setTransactions(updatedList);
-        });
+        await addTransaction(transaction);
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [addTransaction]);
 
   // For testing: Simulate receiving an SMS
-  const mockSms = (body: string) => {
+  const mockSms = async (body: string) => {
     const transaction = parseSms(body);
     if (transaction) {
-      saveTransaction(transaction).then(updatedList => {
-        setTransactions(updatedList);
-      });
+      await addTransaction(transaction);
     }
   };
 

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "scratch",
-    "slug": "scratch",
+    "name": "expense-tracker",
+    "slug": "expense-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "scratch",
+    "scheme": "expense-tracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
