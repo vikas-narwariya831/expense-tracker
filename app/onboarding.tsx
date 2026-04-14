@@ -32,7 +32,6 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 

@@ -70,3 +70,12 @@ export const deleteCustomer = async (id: string): Promise<Customer[]> => {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   return updated;
 };
+
+export const clearAllData = async (): Promise<void> => {
+  try {
+    await AsyncStorage.clear();
+    console.log("Entire AsyncStorage cleared!");
+  } catch (e) {
+    console.error('Error clearing all data', e);
+  }
+};

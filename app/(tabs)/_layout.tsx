@@ -1,6 +1,8 @@
+// _layout.tsx - Fixed Tab Bar
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View, StyleSheet, Platform, Dimensions } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, BarChart3, BookUser } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import { HapticTab } from '@/components/haptic-tab';
@@ -11,13 +13,9 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
-const TAB_BAR_WIDTH = 340;
-const SCREEN_WIDTH = Dimensions.get('window').width;
-// Right side center: screen ka 75% pe center karo
-const TAB_LEFT = SCREEN_WIDTH * 0.75 - TAB_BAR_WIDTH / 2;
-
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const isDark = colorScheme === 'dark';
 
   return (
@@ -29,47 +27,47 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarShowLabel: false,
         tabBarItemStyle: {
-          height: 60,
+          paddingVertical: 0,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingBottom: 0,
-          paddingTop: 0,
+        },
+        tabBarIconStyle: {
+          width: 32,
+          height: 32,
+          justifyContent: 'center',
+          alignItems: 'center',
         },
         tabBarStyle: {
           position: 'absolute',
-          bottom: 30,
-          left: TAB_LEFT,   // ✅ right side mein precisely placed
-          width: TAB_BAR_WIDTH,
+          bottom: Math.max(insets.bottom, 20),
+          left: 30,
+          right: 30,
           height: 60,
           borderRadius: 30,
-          backgroundColor: 'transparent',
+          backgroundColor: Platform.OS === 'ios' ? 'transparent' : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.92)'),
           borderTopWidth: 0,
-          elevation: 10,
+          elevation: 12,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.12,
-          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
           paddingBottom: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
+          overflow: 'visible',
+          borderWidth: Platform.OS === 'ios' ? 0 : 1,
+          borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
         },
         tabBarBackground: () => (
-          <View style={styles.tabBarContainer}>
+          <View style={[
+            styles.tabBarContainer,
+            { 
+              borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            }
+          ]}>
             <BlurView
-              intensity={Platform.OS === 'ios' ? 30 : 60}
-              tint={isDark ? 'dark' : 'default'}
-              style={StyleSheet.absoluteFill}
-            />
-            <View
-              style={[
-                styles.glassBorder,
-                {
-                  borderColor: isDark
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'rgba(0,0,0,0.06)',
-                },
-              ]}
+              intensity={isDark ? 60 : 90}
+              tint={isDark ? 'dark' : 'light'}
+              style={[StyleSheet.absoluteFill, { borderRadius: 30, overflow: 'hidden' }]}
             />
           </View>
         ),
@@ -128,7 +126,7 @@ function TabIcon({
   return (
     <View style={styles.iconWrapper}>
       <Animated.View style={animatedStyle}>
-        <Icon size={22} color={color} strokeWidth={focused ? 2.5 : 1.8} />
+        <Icon size={28} color={color} strokeWidth={focused ? 2.0 : 1.6} />
       </Animated.View>
       {focused && (
         <View style={[styles.activeDot, { backgroundColor: color }]} />
@@ -142,22 +140,19 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: 30,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-  },
-  glassBorder: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 30,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth * 2,
   },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: 40,
+    height: 40,
   },
   activeDot: {
     position: 'absolute',
-    bottom: -10,
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
+    bottom: -6,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
 });

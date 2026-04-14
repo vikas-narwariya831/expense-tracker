@@ -6,11 +6,10 @@ import 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { AuthProvider, useAuth } from '../context/AuthContext';
 import { TransactionProvider } from '../context/TransactionContext';
 import { LedgerProvider } from '../context/LedgerContext';
 import BrandedSplash from '../components/BrandedSplash';
-
+// import { clearAllData } from '../lib/ledger_storage';
 export const unstable_settings = {
   anchor: '(tabs)',
 };
@@ -19,7 +18,6 @@ function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
   const router = useRouter();
-  const { isLoading } = useAuth(); // Keeping isLoading for Auth context readiness
   const [showSplash, setShowSplash] = useState(true);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
@@ -37,26 +35,43 @@ function RootLayoutContent() {
     return () => clearTimeout(timer);
   }, []);
 
+
+  // useEffect(() => {
+  //   clearAllData();
+  // }, []);
+
+
   useEffect(() => {
-    if (isLoading || showSplash || hasSeenOnboarding === null) return;
+    if (showSplash || hasSeenOnboarding === null) return;
 
     const inOnboardingGroup = segments[0] === 'onboarding';
 
-    // Direct redirection logic without Auth/Login check
-    if (!hasSeenOnboarding) {
-      if (!inOnboardingGroup) {
-        router.replace('/onboarding');
+    const performRedirection = async () => {
+      // Re-fetch status if we're marked as "not seen" to catch real-time changes
+      let status = hasSeenOnboarding;
+      if (!status) {
+        const value = await AsyncStorage.getItem('hasSeenOnboarding');
+        if (value === 'true') {
+          setHasSeenOnboarding(true);
+          status = true;
+        }
       }
-    } else {
-      // If onboarding seen, always ensure we land on (tabs) 
-      // This bypasses login completely as requested
-      if (inOnboardingGroup || segments[0] === 'login' || !segments[0]) {
-        router.replace('/(tabs)');
-      }
-    }
-  }, [segments, isLoading, showSplash, router, hasSeenOnboarding]);
 
-  if (isLoading || hasSeenOnboarding === null) return null;
+      if (!status) {
+        if (!inOnboardingGroup) {
+          router.replace('/onboarding');
+        }
+      } else {
+        if (inOnboardingGroup || !segments[0] || segments[0] === 'login') {
+          router.replace('/(tabs)');
+        }
+      }
+    };
+
+    performRedirection();
+  }, [segments, showSplash, router, hasSeenOnboarding]);
+
+  if (hasSeenOnboarding === null) return null;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -76,12 +91,10 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <TransactionProvider>
-        <LedgerProvider>
-          <RootLayoutContent />
-        </LedgerProvider>
-      </TransactionProvider>
-    </AuthProvider>
+    <TransactionProvider>
+      <LedgerProvider>
+        <RootLayoutContent />
+      </LedgerProvider>
+    </TransactionProvider>
   );
 }

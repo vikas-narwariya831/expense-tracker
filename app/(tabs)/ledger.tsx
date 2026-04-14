@@ -68,15 +68,23 @@ export default function LedgerScreen() {
       </View>
 
       <View style={styles.summaryContainer}>
-        <View style={styles.summaryBox}>
-          <Text style={styles.summaryLabel}>You'll Get</Text>
-          <Text style={[styles.summaryAmount, { color: '#F43F5E' }]}>₹{netGet.toLocaleString()}</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryBox}>
-          <Text style={styles.summaryLabel}>You'll Give</Text>
-          <Text style={[styles.summaryAmount, { color: '#10B981' }]}>₹{netGive.toLocaleString()}</Text>
-        </View>
+        <LinearGradient
+          colors={['#ECFDF5', '#D1FAE5']}
+          style={styles.summaryCard}
+        >
+          <Text style={[styles.summaryLabel, { color: '#059669' }]}>You'll Get</Text>
+          <Text style={[styles.summaryAmount, { color: '#059669' }]}>₹{netGet.toLocaleString()}</Text>
+          <View style={[styles.summaryIndicator, { backgroundColor: '#10B981' }]} />
+        </LinearGradient>
+
+        <LinearGradient
+          colors={['#FFF1F2', '#FFE4E6']}
+          style={styles.summaryCard}
+        >
+          <Text style={[styles.summaryLabel, { color: '#E11D48' }]}>You'll Give</Text>
+          <Text style={[styles.summaryAmount, { color: '#E11D48' }]}>₹{netGive.toLocaleString()}</Text>
+          <View style={[styles.summaryIndicator, { backgroundColor: '#F43F5E' }]} />
+        </LinearGradient>
       </View>
 
       <View style={styles.searchBar}>
@@ -114,7 +122,7 @@ export default function LedgerScreen() {
               <View style={styles.balanceContainer}>
                 <Text style={[
                   styles.balanceAmount,
-                  { color: item.netBalance >= 0 ? '#F43F5E' : '#10B981' }
+                  { color: item.netBalance >= 0 ? '#10B981' : '#F43F5E' }
                 ]}>
                   ₹{Math.abs(item.netBalance).toLocaleString()}
                 </Text>
@@ -229,37 +237,41 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
+    gap: 12,
     marginHorizontal: 24,
+    marginBottom: 27,
+  },
+  summaryCard: {
+    flex: 1,
     borderRadius: 24,
-    padding: 20,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    marginBottom: 24,
+    borderColor: 'rgba(255,255,255,0.5)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
-    elevation: 2,
-  },
-  summaryBox: {
-    flex: 1,
-    alignItems: 'center',
+    elevation: 3,
   },
   summaryLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '600',
-    marginBottom: 6,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   summaryAmount: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '900',
   },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: '#F1F5F9',
-    marginHorizontal: 10,
+  summaryIndicator: {
+    width: 20,
+    height: 3,
+    borderRadius: 2,
+    marginTop: 8,
+    opacity: 0.3,
   },
   searchBar: {
     flexDirection: 'row',

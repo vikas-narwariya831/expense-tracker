@@ -100,7 +100,7 @@ export default function CustomerDetailScreen() {
             <Text style={styles.balanceLabel}>Current Balance</Text>
             <Text style={[
               styles.balanceValue,
-              { color: customer.netBalance >= 0 ? '#F43F5E' : '#10B981' }
+              { color: customer.netBalance >= 0 ? '#10B981' : '#F43F5E' }
             ]}>
               ₹{Math.abs(customer.netBalance).toLocaleString()}
             </Text>
@@ -141,9 +141,17 @@ export default function CustomerDetailScreen() {
                 ]}>
                   {item.type === 'gave' ? '+' : '-'} ₹{item.amount.toLocaleString()}
                 </Text>
-                <Text style={styles.entryTypeLabel}>
-                  {item.type === 'gave' ? 'You Gave' : 'You Got'}
-                </Text>
+                <View style={[
+                  styles.statusChip,
+                  { backgroundColor: item.type === 'gave' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)' }
+                ]}>
+                  <Text style={[
+                    styles.statusChipText,
+                    { color: item.type === 'gave' ? '#10B981' : '#F43F5E' }
+                  ]}>
+                    {item.type === 'gave' ? 'You Gave' : 'You Got'}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -156,55 +164,91 @@ export default function CustomerDetailScreen() {
       />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         style={styles.bottomActions}
       >
         {isEntryMode ? (
           <Animated.View entering={SlideInDown} style={styles.entryForm}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>
-                {isEntryMode === 'gave' ? 'You Gave Money' : 'You Got Money'}
-              </Text>
-              <TouchableOpacity onPress={() => setIsEntryMode(null)}>
-                <XCircle size={24} color="#64748B" />
+              <View style={styles.formTitleContainer}>
+                <View style={[
+                  styles.formIndicator, 
+                  { backgroundColor: isEntryMode === 'gave' ? '#F43F5E' : '#10B981' }
+                ]} />
+                <Text style={styles.formTitle}>
+                  {isEntryMode === 'gave' ? 'You Lending Money' : 'You Receiving Money'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsEntryMode(null)} style={styles.closeFormBtn}>
+                <X size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
-            <TextInput
-              style={styles.amountInput}
-              placeholder="Enter Amount"
-              keyboardType="decimal-pad"
-              autoFocus
-              value={amount}
-              onChangeText={setAmount}
-            />
+            
+            <View style={styles.amountInputWrapper}>
+              <Text style={styles.currencySymbol}>₹</Text>
+              <TextInput
+                style={styles.amountInput}
+                placeholder="0"
+                keyboardType="decimal-pad"
+                autoFocus
+                value={amount}
+                onChangeText={setAmount}
+                placeholderTextColor="#CBD5E1"
+              />
+            </View>
+
             <TextInput
               style={styles.noteInput}
-              placeholder="Add a note (e.g. for lunch)"
+              placeholder="What is this for? (e.g. Lunch, Milk)"
               value={note}
               onChangeText={setNote}
+              placeholderTextColor="#94A3B8"
             />
+
             <TouchableOpacity 
-              style={[styles.saveBtn, { backgroundColor: isEntryMode === 'gave' ? '#F43F5E' : '#10B981' }]}
+              style={styles.saveBtn}
               onPress={handleSaveEntry}
+              activeOpacity={0.8}
             >
-              <Text style={styles.saveBtnText}>Save Entry</Text>
+              <LinearGradient
+                colors={isEntryMode === 'gave' ? ['#10B981', '#059669'] : ['#F43F5E', '#E11D48']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.saveBtnGradient}
+              >
+                <Text style={styles.saveBtnText}>Save Transaction</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
         ) : (
           <View style={styles.actionButtons}>
             <TouchableOpacity 
-              style={[styles.actionBtn, styles.btnGave]}
+              style={styles.actionBtn}
               onPress={() => setIsEntryMode('gave')}
+              activeOpacity={0.9}
             >
-              <Minus size={20} color="#FFF" />
-              <Text style={styles.actionBtnText}>YOU GAVE</Text>
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                style={styles.btnGradient}
+              >
+                <Minus size={20} color="#FFF" strokeWidth={3} />
+                <Text style={styles.actionBtnText}>YOU GAVE</Text>
+              </LinearGradient>
             </TouchableOpacity>
+            
             <TouchableOpacity 
-              style={[styles.actionBtn, styles.btnGot]}
+              style={styles.actionBtn}
               onPress={() => setIsEntryMode('got')}
+              activeOpacity={0.9}
             >
-              <Plus size={20} color="#FFF" />
-              <Text style={styles.actionBtnText}>YOU GOT</Text>
+              <LinearGradient
+                colors={['#F43F5E', '#E11D48']}
+                style={styles.btnGradient}
+              >
+                <Plus size={20} color="#FFF" strokeWidth={3} />
+                <Text style={styles.actionBtnText}>YOU GOT</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         )}
@@ -351,51 +395,67 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   entryAmount: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
   },
-  entryTypeLabel: {
+  statusChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  statusChipText: {
     fontSize: 10,
-    color: '#94A3B8',
-    fontWeight: '600',
-    marginTop: 2,
+    fontWeight: '700',
     textTransform: 'uppercase',
+    marginBottom:10
   },
   bottomActions: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFF',
+    // backgroundColor: '#FFF',
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 24,
     paddingTop: 16,
+        marginBottom:30,
+
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 20,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   actionBtn: {
     flex: 1,
-    height: 54,
-    borderRadius: 16,
+    height: 56,
+    borderRadius: 18,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  btnGradient: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnGave: {
-    backgroundColor: '#F43F5E',
-  },
-  btnGot: {
-    backgroundColor: '#10B981',
-  },
   actionBtnText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
-    marginLeft: 8,
+    marginLeft: 10,
+    letterSpacing: 0.5,
   },
   entryForm: {
     backgroundColor: '#FFF',
@@ -404,35 +464,77 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  formTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  formIndicator: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+    marginRight: 10,
   },
   formTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  amountInput: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '800',
     color: '#1E293B',
-    backgroundColor: '#F8FAFC',
+  },
+  closeFormBtn: {
+    width: 32,
+    height: 32,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    textAlign: 'center',
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  amountInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    height: 70,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  currencySymbol: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#6366F1',
+    marginRight: 8,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#1E293B',
   },
   noteInput: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '500',
     color: '#1E293B',
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    height: 60,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   saveBtn: {
-    height: 54,
-    borderRadius: 16,
+    height: 56,
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  saveBtnGradient: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
