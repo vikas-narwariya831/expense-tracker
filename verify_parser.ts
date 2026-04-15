@@ -19,7 +19,7 @@ const tests = [
   }
 ];
 
-console.log("Starting Parser Verification...");
+// console.log("Starting Parser Verification...");
 
 tests.forEach((test, i) => {
   const result = parseSms(test.sms);
